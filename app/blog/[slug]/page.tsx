@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { CustomMDX } from 'app/components/mdx'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { baseUrl } from 'app/sitemap'
+import { Metadata} from 'next'
+import { MDXRemote } from 'next-mdx-remote/rsc'
 
 export async function generateStaticParams() {
   let posts = getBlogPosts()
@@ -11,8 +13,16 @@ export async function generateStaticParams() {
   }))
 }
 
-export function generateMetadata({ params }) {
-  let post = getBlogPosts().find((post) => post.slug === params.slug)
+type GenerateMetadataProps = {
+  params: Promise<{ slug: string }>
+}
+ 
+export async function generateMetadata(
+  { params }: GenerateMetadataProps
+): Promise<Metadata | undefined> {
+  const { slug } = await params;
+  let post = await getBlogPosts().find((post) => post.slug === slug);
+
   if (!post) {
     return
   }
@@ -51,8 +61,13 @@ export function generateMetadata({ params }) {
   }
 }
 
-export default function Blog({ params }) {
-  let post = getBlogPosts().find((post) => post.slug === params.slug)
+export default async function Blog({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params;
+  let post = getBlogPosts().find((post) => post.slug === slug)
 
   if (!post) {
     notFound()
@@ -91,7 +106,7 @@ export default function Blog({ params }) {
         </p>
       </div>
       <article className="prose">
-        <CustomMDX source={post.content} />
+        <MDXRemote source={post.content} />
       </article>
     </section>
   )
